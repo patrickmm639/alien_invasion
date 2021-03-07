@@ -1,6 +1,7 @@
 import sys, pygame
 from settings import Settings
 from ship import Ship
+from bullet import Bullet
 
 class AlienInvasion:
     """Overall class to manage game assets and behavior."""
@@ -13,9 +14,11 @@ class AlienInvasion:
         self.settings.screen_width = self.screen.get_rect().width
         self.settings.screen_height = self.screen.get_rect().height
         pygame.display.set_caption('Alien Invasion')
-        
+        pygame.mixer.music.load('music/space_invaders.ogg')
+        pygame.mixer.music.play(-1)
         pygame.mouse.set_visible(False)
         self.ship = Ship(self)
+        self.bullets = pygame.sprite.Group()
         
     def run_game(self):
         """Start the main loop for the game."""
@@ -23,8 +26,9 @@ class AlienInvasion:
             #watch for keyboard and mouse events.
             self._check_events()
             self.ship.update()
+            self._update_bullets()
             self._update_screen()
-           
+
     def _check_events(self):
         """Respond to keypresses and mouse events."""
         for event in pygame.event.get():
@@ -45,6 +49,8 @@ class AlienInvasion:
             self.ship.moving_left = True
         elif event.key == pygame.K_q:
             sys.exit()
+        elif event.key == pygame.K_SPACE:
+            self._fire_bullet()
 
     def _check_keyup_events(self, event):
         """Respond to key releases."""
@@ -53,12 +59,26 @@ class AlienInvasion:
         elif event.key == pygame.K_LEFT:
             self.ship.moving_left = False 
 
-
+    def _fire_bullet(self):
+        """Create a new bullet and dd it to the bullets group."""
+        if len(self.bullets) < self.settings.bullet_allowed:
+            new_bullet = Bullet(self)
+            self.bullets.add(new_bullet)
+        
+    def _update_bullets(self):
+        """Update position of bullets nd get rid of old bullets."""
+        self.bullets.update()
+        for bullet in self.bullets.copy():
+            if bullet.rect.bottom <= 0:
+                self.bullets.remove(bullet)
 
     def _update_screen(self):
         #Redraw the screen during each pass through the loop.
         self.screen.fill(self.settings.bg_color)
-        self.ship.blitme()            
+        self.ship.blitme()
+        for bullet in self.bullets.sprites():
+            bullet.draw_bullet()
+
         #Make the most recently drawn screen visible.
         pygame.display.flip()
 
